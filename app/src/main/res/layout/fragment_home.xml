@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:weightSum="10">
+
+    <com.github.anastr.speedviewlib.AwesomeSpeedometer
+        android:id="@+id/speed"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:sv_withTremble="false"
+        android:layout_marginTop="25dp"
+        android:layout_weight="5"
+        app:sv_backgroundCircleColor="@color/black"
+        app:sv_maxSpeed="280"
+        app:sv_minSpeed="0"
+        app:sv_speedTextPosition="CENTER"
+        app:sv_speedometerMode="NORMAL"
+        app:sv_trianglesColor="@color/white" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="5"
+        android:gravity="bottom"
+        android:orientation="vertical">
+
+        <fragment
+            android:id="@+id/frag"
+            android:name="com.example.gps.ParameterFragment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+</LinearLayout>
