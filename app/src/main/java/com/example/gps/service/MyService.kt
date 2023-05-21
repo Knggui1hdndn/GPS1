@@ -73,8 +73,10 @@ class MyService : Service() {
     var timePrevious: Long? = null
     private var checkStart = false
     private var checkEnd = false
+    private var lastMovementDataId=0
     private var previousLocation: Location? = null
     private val locationCallback1 = object : LocationCallback() {
+        @SuppressLint("SuspiciousIndentation")
         override fun onLocationResult(locationResult: LocationResult) {
             val lastLocation = locationResult.lastLocation
             if (lastLocation != null && previousLocation != null) {
@@ -94,8 +96,13 @@ class MyService : Service() {
                             0F
                         )
                     )
+                    lastMovementDataId=myDataBase.movementDao().getLastMovementDataId()
                 }
                 checkStart = true
+            }else{
+                if (lastLocation != null) {
+                    myDataBase.locationDao().insertLocationData(lastLocation.latitude,lastLocation.longitude, lastMovementDataId )
+                }
             }
             if (checkEnd) {
                 getAddress(lastLocation)?.let {
