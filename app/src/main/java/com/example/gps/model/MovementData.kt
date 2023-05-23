@@ -13,4 +13,8 @@ class MovementData(
     var averageSpeed: Float,
     var distance: Float,
     var time: Float
-)
+){
+    override fun toString(): String {
+        return "MovementData(id=$id, start='$start', end=$end, maxSpeed=$maxSpeed, averageSpeed=$averageSpeed, distance=$distance, time=$time)"
+    }
+}

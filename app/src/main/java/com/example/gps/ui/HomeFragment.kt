@@ -25,8 +25,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 if (speed1.toFloat() > 0) {
                     this!!.speed.setSpeedAt(speed1.toFloat())
                 }
-
-
             }
         }
     }

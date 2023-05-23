@@ -9,7 +9,8 @@ import com.example.gps.model.MovementData
 
 @Dao
 interface LocationDao {
-
+    @Query("SELECT * FROM LocationData")
+    fun getAllLocationData(): MutableList<LocationData>
     @Query("SELECT * FROM LocationData where movementDataId = :movementDataId")
     fun getLocationData(movementDataId: Int): MutableList<LocationData>
 

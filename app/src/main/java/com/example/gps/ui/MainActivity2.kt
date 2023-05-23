@@ -2,57 +2,73 @@ package com.example.gps.ui
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.util.Log
-import android.widget.TextView
+import android.view.Menu
+import android.view.MenuItem
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.example.gps.MainActivity
+import com.example.gps.MyLocationConstants
 import com.example.gps.R
-import com.example.gps.Send
+import com.example.gps.dao.MyDataBase
 import com.example.gps.databinding.ActivityMain2Binding
 import com.example.gps.utils.TimeUtils
 import com.example.gps.viewModel.SharedViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 
-class MainActivity2 : AppCompatActivity(), Send {
+class MainActivity2 : AppCompatActivity() {
 
 
     private lateinit var binding: ActivityMain2Binding
     private var initialTime = 0L
-    private var countDownTimer: CountDownTimer? = null
     private var sharedViewModel: SharedViewModel? = null
 
-    @SuppressLint("SetTextI18n")
-    override fun send(i: Int) {
-        when (i) {
-            START -> {
-                countingTime(binding.times, Long.MAX_VALUE)!!.start()
-                Log.d("ssssssssss", "START")
-            }
+    private var intentFilter: IntentFilter? = null
+    private val broadCast = object : BroadcastReceiver() {
+        @SuppressLint("SetTextI18n")
+        override fun onReceive(context: Context?, intent: Intent?) {
+            Log.d("action", intent?.action.toString())
+            when (intent?.action) {
+                MyLocationConstants.START -> {
+                    val bundle = intent.getBundleExtra("Bundle")
 
-            PAUSE -> {
-                countDownTimer?.cancel()
-            }
+                    binding.times.text =
+                        TimeUtils.formatTime(bundle?.getLong(MyLocationConstants.TIME)!!)
+                }
 
-            RESUME -> {
-                countingTime(binding.times, initialTime)!!.start()
-            }
+                MyLocationConstants.STOP -> {
+                    binding.times.text = "00 : 00 : 00"
+                }
 
-            STOP -> {
-                countingTime(binding.times, 0)!!.cancel()
-                binding.times.text = "00 : 00 : 00"
+                MyLocationConstants.LOCATION_CHANGE -> {
+                    val bundle = intent.getBundleExtra("Bundle")
+                    if (bundle != null) {
+                        sharedViewModel?.setCurrentSpeed(bundle.getFloat("speed"))
+                        sharedViewModel?.setAverageSpeed(bundle.getFloat("averageSpeed"))
+                        sharedViewModel?.setDistance(bundle.getFloat("distance"))
+                        sharedViewModel?.setMaxSpeed(bundle.getFloat("speedMax"))
+                        sharedViewModel?.setLocationLiveData(bundle.getParcelable("location")!!)
+                    }
+                }
             }
         }
 
     }
 
+    @RequiresApi(Build.VERSION_CODES.P)
     @SuppressLint("UseCompatLoadingForDrawables", "SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,10 +80,14 @@ class MainActivity2 : AppCompatActivity(), Send {
         sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
         binding.times.typeface = Typeface.createFromAsset(assets, "font_lcd.ttf")
         binding.times.text = "00 : 00 : 00"
+        val movementData = MyDataBase.getInstance(this).movementDao()
+        val location = MyDataBase.getInstance(this).locationDao()
+        Log.d("okokok", location.getLocationData(6).toString())
         val navView: BottomNavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_activity_main2)
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
+        requestPermissions(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION), 1)
         val appBarConfiguration = AppBarConfiguration(
             setOf(
                 R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications
@@ -79,6 +99,7 @@ class MainActivity2 : AppCompatActivity(), Send {
             supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_home_black_24dp)
             supportActionBar?.setDisplayHomeAsUpEnabled(true)
         }
+
         requestPermissions(
             arrayOf(
                 Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -87,21 +108,29 @@ class MainActivity2 : AppCompatActivity(), Send {
         )
     }
 
-    private fun countingTime(times: TextView, totalTime: Long): CountDownTimer? {
-        sharedViewModel?.getDistanceLiveData()?.observe(this) {
-            sharedViewModel?.setAverageSpeed(((it / totalTime) *3.6).toFloat())
-            Log.d("ssssssssssss ","${((it / totalTime) *3.6).toFloat()}")
-        }
-        countDownTimer = object : CountDownTimer(totalTime, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                initialTime = Long.MAX_VALUE - millisUntilFinished
-                times.text = TimeUtils.formatTime(Long.MAX_VALUE - millisUntilFinished)
-            }
+    override fun onResume() {
+        super.onResume()
+        intentFilter = IntentFilter()
+        intentFilter!!.addAction(MyLocationConstants.START)
+        intentFilter!!.addAction(MyLocationConstants.STOP)
+        intentFilter!!.addAction(MyLocationConstants.LOCATION_CHANGE)
+        registerReceiver(broadCast, intentFilter)
+    }
 
-            override fun onFinish() {
-            }
-        }
-        return countDownTimer
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.history, menu)
+        return true
+    }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.history) {
+            startService(Intent(this, MainActivity::class.java))
+        }
+        return true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(broadCast)
     }
 }

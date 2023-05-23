@@ -31,7 +31,7 @@
 
         <fragment
             android:id="@+id/frag"
-            android:name="com.example.gps.ParameterFragment"
+            android:name="com.example.gps.ui.ParameterFragment"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
     </LinearLayout>

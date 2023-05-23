@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    tools:context=".ParameterFragment">
+    tools:context=".ui.ParameterFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -97,7 +97,8 @@
                     android:layout_height="wrap_content"
                     android:gravity="bottom"
                     android:text="KM/H"
-
+android:maxLines="1"
+                    android:ellipsize="end"
                     android:textColor="@color/teal_200" />
             </LinearLayout>
         </LinearLayout>
@@ -141,7 +142,8 @@
                     android:layout_height="wrap_content"
                     android:gravity="bottom"
                     android:text="KM/H"
-
+                    android:maxLines="1"
+                    android:ellipsize="end"
                     android:textColor="@color/teal_200" />
             </LinearLayout>
         </LinearLayout>

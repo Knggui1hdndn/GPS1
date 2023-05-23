@@ -1,13 +1,16 @@
 package com.example.gps.ui
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import com.example.gps.MyLocationConstants
 import com.example.gps.R
+import com.example.gps.dao.MyDataBase
 import com.example.gps.viewModel.SharedViewModel
 import com.example.gps.databinding.FragmentNotificationsBinding
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -27,7 +30,7 @@ class NotificationsFragment : Fragment(R.layout.fragment_notifications) {
     @SuppressLint("SuspiciousIndentation", "MissingPermission")
     private val callback = OnMapReadyCallback { p0 ->
         map = p0
-         map!!.apply {
+        map!!.apply {
             isMyLocationEnabled = true
             setMinZoomPreference(15.0f);
             setMaxZoomPreference(35.0f);
@@ -35,7 +38,7 @@ class NotificationsFragment : Fragment(R.layout.fragment_notifications) {
             uiSettings.isRotateGesturesEnabled = true
             map?.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
 //            map?.moveCamera(CameraUpdateFactory.newLatLng(LatLng(20.99605906969354, 105.74779462069273)))
-            /// map.mapType = GoogleMap.MAP_TYPE_HYBRID
+            map?.mapType = GoogleMap.MAP_TYPE_HYBRID
             setOnCameraMoveListener {
                 resetMinMaxZoomPreference()
             }
@@ -46,7 +49,7 @@ class NotificationsFragment : Fragment(R.layout.fragment_notifications) {
     private val polylineOptions = PolylineOptions()
     var sharedViewModel: SharedViewModel? = null
 
-     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = FragmentNotificationsBinding.bind(view)
         if (savedInstanceState != null) {
             cameraPosition = savedInstanceState.getParcelable("cameraPosition")
@@ -59,7 +62,21 @@ class NotificationsFragment : Fragment(R.layout.fragment_notifications) {
         var i = 0
         if (binding != null) {
             with(binding) {
-
+                val shaPreferences =
+                    requireActivity().getSharedPreferences("state", Context.MODE_PRIVATE)
+                val state = shaPreferences.getString(MyLocationConstants.STATE, null)
+                if (state == MyLocationConstants.START || state == MyLocationConstants.PAUSE || state == MyLocationConstants.RESUME) {
+                    val listLating = MyDataBase.getInstance(requireContext()).locationDao()
+                        .getLocationData(
+                            MyDataBase.getInstance(requireContext()).movementDao()
+                                .getLastMovementDataId()
+                        )
+                    val list =
+                        listLating.map { LatLng(it.latitude.toDouble(), it.longitude.toDouble()) }
+                            .toList()
+                    polylineOptions.addAll(list)
+                        .color(Color.GREEN).width(15f)
+                }
                 sharedViewModel!!.getLocationLiveData().observe(viewLifecycleOwner) { location ->
                     if (i == 0 && map != null && cameraPosition == null) {
                         val sydney = LatLng(location.latitude, location.longitude)
@@ -67,7 +84,8 @@ class NotificationsFragment : Fragment(R.layout.fragment_notifications) {
                         map?.moveCamera(CameraUpdateFactory.newLatLng(sydney))
                         i = 1
                     }
-                     polylineOptions.add(LatLng(location.latitude, location.longitude)).color(Color.GREEN).width(15f)
+                    polylineOptions.add(LatLng(location.latitude, location.longitude))
+                        .color(Color.GREEN).width(15f)
                     map?.addPolyline(polylineOptions)
                     this!!.latitude.text = location.latitude.toString()
                     this.longitude.text = location.longitude.toString()

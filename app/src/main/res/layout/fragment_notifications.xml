@@ -148,8 +148,8 @@
 
         <fragment
             android:id="@+id/frag"
-            android:layout_marginTop="25dp"
-            android:name="com.example.gps.ParameterFragment"
+
+            android:name="com.example.gps.ui.ParameterFragment"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             />

@@ -19,4 +19,8 @@ class LocationData (
     val latitude: Float,
     val longitude: Float,
     val movementDataId: Int
-)
+){
+    override fun toString(): String {
+        return "LocationData(id=$id, latitude=$latitude, longitude=$longitude, movementDataId=$movementDataId)"
+    }
+}
