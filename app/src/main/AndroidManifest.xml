@@ -20,11 +20,14 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.GPS"
         tools:targetApi="31">
-
+        <activity
+            android:name=".ui.ShowActivity"
+            android:exported="false" />
         <!--
              TODO: Before you run your application, you need a Google Maps API key.
 
@@ -39,7 +42,9 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyBmPUi9mcViTyaRoCugpgsOIPJp63fUm1s" />
+
         <service android:name=".service.MyService" />
+
         <activity
             android:name=".ui.MainActivity2"
             android:exported="true">

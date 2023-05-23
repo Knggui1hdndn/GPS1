@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 class MovementData(
     @PrimaryKey(autoGenerate = true)
     val id:Int,
+    val date:String,
     val start: String,
     var end: String?,
     var maxSpeed: Float,
