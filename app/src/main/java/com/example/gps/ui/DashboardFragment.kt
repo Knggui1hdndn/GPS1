@@ -3,11 +3,10 @@ package com.example.gps.ui
 import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import com.example.gps.utils.FontUtils
+ import com.example.gps.utils.FontUtils
 import com.example.gps.R
-import com.example.gps.viewModel.SharedViewModel
-import com.example.gps.databinding.FragmentDashboardBinding
+import com.example.gps.SharedData
+ import com.example.gps.databinding.FragmentDashboardBinding
 
 class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
@@ -17,13 +16,12 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
     // onDestroyView.
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = FragmentDashboardBinding.bind(view)
-        val  sharedViewModel=ViewModelProvider(requireActivity())[SharedViewModel::class.java]
-        with(binding) {
+         with(binding) {
             FontUtils.setFont(requireContext(), this!!.txtSpeed)
-            sharedViewModel.getCurrentSpeedLiveData().observe(viewLifecycleOwner){
+            SharedData.currentSpeedLiveData.observe(viewLifecycleOwner){
                 txtSpeed.text=String.format("%.1f",it)
             }
-            sharedViewModel.getDistanceLiveData().observe(viewLifecycleOwner){
+             SharedData.distanceLiveData.observe(viewLifecycleOwner){
                 txtDistance1.text=String.format("%.1f",it)
 
             }

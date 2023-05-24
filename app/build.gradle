@@ -45,7 +45,10 @@ dependencies {
     implementation 'androidx.navigation:navigation-fragment-ktx:2.5.3'
     implementation 'androidx.navigation:navigation-ui-ktx:2.5.3'
     implementation 'androidx.core:core-ktx:1.10.1'
-
+     implementation 'com.google.android.gms:play-services-ads:22.1.0'
+    implementation 'androidx.lifecycle:lifecycle-process:2.4.1'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'com.airbnb.android:lottie:6.0.0'
     def room_version = "2.5.1"
     implementation "androidx.room:room-ktx:$room_version"
     implementation "androidx.room:room-runtime:$room_version"

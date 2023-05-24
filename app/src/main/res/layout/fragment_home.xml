@@ -7,12 +7,12 @@
     android:gravity="center_horizontal"
     android:orientation="vertical"
     android:weightSum="10">
+    <!--        app:sv_withTremble="false"-->
 
     <com.github.anastr.speedviewlib.AwesomeSpeedometer
         android:id="@+id/speed"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:sv_withTremble="false"
         android:layout_marginTop="25dp"
         android:layout_weight="5"
         app:sv_backgroundCircleColor="@color/black"

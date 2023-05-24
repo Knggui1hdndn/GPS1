@@ -16,8 +16,8 @@ import androidx.room.PrimaryKey
 class LocationData (
     @PrimaryKey(autoGenerate = true)
     val id: Int,
-    val latitude: Float,
-    val longitude: Float,
+    val latitude: Double,
+    val longitude: Double,
     val movementDataId: Int
 ){
     override fun toString(): String {

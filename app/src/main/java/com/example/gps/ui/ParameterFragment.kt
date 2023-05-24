@@ -11,10 +11,10 @@ import android.view.View
 import androidx.lifecycle.ViewModelProvider
 import com.example.gps.MyLocationConstants
 import com.example.gps.R
+import com.example.gps.SharedData
 import com.example.gps.databinding.FragmentParameterBinding
 import com.example.gps.service.MyService
 import com.example.gps.utils.FontUtils
-import com.example.gps.viewModel.SharedViewModel
 
 class ParameterFragment : Fragment(R.layout.fragment_parameter) {
     private var binding: FragmentParameterBinding? = null
@@ -24,15 +24,14 @@ class ParameterFragment : Fragment(R.layout.fragment_parameter) {
         binding = FragmentParameterBinding.bind(view)
         sharedPreferences = requireActivity().getSharedPreferences("state", Service.MODE_PRIVATE)
         with(binding) {
-            val sharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
-            sharedViewModel.getMaxSpeedLiveData().observe(viewLifecycleOwner) {
+             SharedData.maxSpeedLiveData.observe(viewLifecycleOwner) {
                 this!!.txtMaxSpeed.text=String.format("%.1f",it)
             }
-            sharedViewModel.getDistanceLiveData().observe(viewLifecycleOwner) {
+            SharedData.distanceLiveData.observe(viewLifecycleOwner) {
                 this!!.txtDistance.text=String.format("%.1f",it)
                 Log.d("ssssss",it.toString())
             }
-            sharedViewModel.getAverageSpeedLiveData().observe(viewLifecycleOwner) {
+            SharedData.averageSpeedLiveData.observe(viewLifecycleOwner) {
                 this!!.txtAverageSpeed.text=String.format("%.1f",it)
             }
 

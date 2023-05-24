@@ -23,16 +23,17 @@ import androidx.core.widget.EdgeEffectCompat.getDistance
 import androidx.lifecycle.ViewModelProvider
 import com.example.gps.MyLocationConstants
 import com.example.gps.R
+import com.example.gps.SharedData
 import com.example.gps.dao.MyDataBase
 import com.example.gps.model.MovementData
 import com.example.gps.ui.MainActivity2
-import com.example.gps.viewModel.SharedViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import java.util.Calendar
 import java.util.Locale
 
 
@@ -43,54 +44,39 @@ class MyService : Service() {
 
     private var checkStop: Boolean = false
     private var fusedLocationClient: FusedLocationProviderClient? = null
-
     private var myDataBase: MyDataBase? = null
     private var millis = 0L
     private val countDownTimer = Handler(Looper.getMainLooper())
-    private val runnable = {
-        countDownTimer()
-    }
-
-    private fun countDownTimer() {
-        millis += 1000
-        Log.d("countDownTimer", "$millis")
-        val bundle = Bundle()
-        bundle.putLong(MyLocationConstants.TIME, millis)
-        sendBroadCast(MyLocationConstants.START, bundle)
-        countDownTimer.postDelayed(runnable, 1000)
-    }
-
-    override fun onCreate() {
-        super.onCreate()
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
-        myDataBase = MyDataBase.getInstance(applicationContext)
-     }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        myDataBase!!.movementDao().insertMovementData(
-            MovementData(
-                0,
-                "",
-                null,
-                0F,
-                0F,
-                0F,
-                0F
-            )
-        )
-        handle(intent?.action)
-        return START_NOT_STICKY
-    }
-
-    private var sharedViewModel: SharedViewModel? = null
     private var distance = 0f
-    var timePrevious: Long? = 0
     private var checkStart = false
     private var checkEnd = false
     private var lastMovementDataId = 0
     private var mili = 0L
     private var previousLocation: Location? = null
     private var listSpeed = mutableListOf<Float>()
+    override fun onCreate() {
+        super.onCreate()
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
+        myDataBase = MyDataBase.getInstance(applicationContext)
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
+        handle(intent?.action)
+        return START_NOT_STICKY
+    }
+
+    private val runnable = {
+        countDownTimer()
+    }
+
+    private fun countDownTimer() {
+        millis += 1000
+        SharedData.time.value = millis
+        countDownTimer.postDelayed(runnable, 1000)
+    }
+
+
     private val locationCallback1 = object : LocationCallback() {
         @RequiresApi(Build.VERSION_CODES.TIRAMISU)
         @SuppressLint("SuspiciousIndentation")
@@ -98,52 +84,60 @@ class MyService : Service() {
             val lastLocation = locationResult.lastLocation
             if (lastLocation != null && previousLocation != null && mili != 0L && myDataBase != null) {
                 if (!checkStart) {
-                    Geocoder(
-                        applicationContext,
-                        Locale.getDefault()
-                    ).getFromLocation(lastLocation.latitude, lastLocation.longitude, 1) {
-                        val movementData= myDataBase!!.movementDao().getLastMovementData()
-                        movementData.end=it[0].getAddressLine(0)
-                        myDataBase!!.movementDao().updateMovementData(
-                            movementData
+                     myDataBase!!.movementDao().insertMovementData(
+                        MovementData(
+                            0,
+                            System.currentTimeMillis(),
+                            lastLocation.latitude ,
+                            lastLocation.longitude ,
+                            0.0,
+                            0.0,
+                            0F,
+                            0F,
+                            0F,
+                            0F
                         )
-                        lastMovementDataId = myDataBase!!.movementDao().getLastMovementDataId()
-                    }
+                    )
+                    lastMovementDataId = myDataBase!!.movementDao().getLastMovementDataId()
                     checkStart = true
-                } else {
-                    if(lastMovementDataId!=0){
-                        myDataBase!!.locationDao().insertLocationData(
-                            lastLocation.latitude,
-                            lastLocation.longitude,
-                            lastMovementDataId
-                        )
-                    }
                 }
-                Log.d("sssssssss",lastLocation.distanceTo(previousLocation!!).toString())
                 listSpeed.add(getCurrentSpeed(lastLocation))
-                val bundle = Bundle()
-                bundle.putParcelable("location", lastLocation)
-                bundle.putFloat("distance", getDistance(lastLocation))
-                bundle.putFloat("speed", getCurrentSpeed(lastLocation))
-                bundle.putFloat("speedMax", getMaxSpeed())
-                bundle.putFloat("averageSpeed", getAverageSpeed())
-                sendBroadCast(MyLocationConstants.LOCATION_CHANGE, bundle)
+                val distance=getDistance(lastLocation)
+                val currentSpeed=getCurrentSpeed(lastLocation)
+                val maxSpeed= getMaxSpeed()
+                val averageSpeed=getAverageSpeed()
+                 with(SharedData) {
+                    locationLiveData.value = lastLocation
+                    distanceLiveData.value = distance
+                    currentSpeedLiveData.value = currentSpeed
+                    maxSpeedLiveData.value =maxSpeed
+                    averageSpeedLiveData.value = averageSpeed
+                }
+
                 if (checkEnd || checkStop) {
                     val movementData = myDataBase!!.movementDao().getLastMovementData()
-                    Geocoder(
-                        applicationContext,
-                        Locale.getDefault()
-                    ).getFromLocation(lastLocation.latitude, lastLocation.longitude, 1) {
-                        movementData.apply {
-                            time = millis.toFloat()
-                            averageSpeed = getAverageSpeed()
-                            maxSpeed = getMaxSpeed()
-                            end = it[0].getAddressLine(0)
-                            distance = getDistance(lastLocation)
+                    movementData.time = millis.toFloat()
+                    movementData.averageSpeed = averageSpeed
+                    movementData.maxSpeed =maxSpeed
+                    movementData.endLatitude = lastLocation.latitude
+                    movementData.endLongitude = lastLocation.longitude
+                    movementData.distance = distance
+
+                    myDataBase!!.movementDao().updateMovementData(movementData)
+                    if (checkStop) {
+                        stopSelf()
+                        removeCallBack()
+                        countDownTimer.removeCallbacks(runnable)
+                        with(SharedData) {
+                            locationLiveData.value = null
+                            distanceLiveData.value = 0F
+                            currentSpeedLiveData.value = 0F
+                            maxSpeedLiveData.value = 0F
+                            averageSpeedLiveData.value = 0F
+                            time.value = 0
+
                         }
-                        myDataBase!!.movementDao().updateMovementData(movementData)
                     }
-                    if (checkStop) sendBroadCast(MyLocationConstants.STOP, null);stopSelf()
                 }
             }
             //s=vt
@@ -168,11 +162,11 @@ class MyService : Service() {
 
     private fun getDistance(lastLocation: Location): Float {
         distance += previousLocation!!.distanceTo(lastLocation)
-        return distance
+        return distance/1000
     }
 
     private fun getAverageSpeed(): Float {
-        return (3.6 * (distance /( millis/1000.0))).toFloat()
+        return (3.6 * (distance / (millis / 1000.0))).toFloat()
     }
 
 
@@ -185,6 +179,7 @@ class MyService : Service() {
     private fun handle(action: String?) {
         when (action) {
             MyLocationConstants.START -> {
+                checkStart = false
                 startCallBack()
                 startForeground(1, getNotifications("0", "0", "0"))
                 countDownTimer.postDelayed(runnable, 1000)
@@ -205,6 +200,8 @@ class MyService : Service() {
 
             MyLocationConstants.STOP -> {
                 checkStop = true
+
+
             }
         }
     }
@@ -252,7 +249,6 @@ class MyService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pendingIntent)
-
             .setCustomContentView(notificationLayout)
             .build()
     }

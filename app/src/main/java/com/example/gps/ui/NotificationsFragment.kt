@@ -10,8 +10,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.gps.MyLocationConstants
 import com.example.gps.R
+import com.example.gps.SharedData
 import com.example.gps.dao.MyDataBase
-import com.example.gps.viewModel.SharedViewModel
 import com.example.gps.databinding.FragmentNotificationsBinding
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -21,6 +21,7 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
+import java.lang.Exception
 import java.util.Locale
 
 
@@ -47,7 +48,6 @@ class NotificationsFragment : Fragment(R.layout.fragment_notifications) {
     private var binding: FragmentNotificationsBinding? = null
     private var map: GoogleMap? = null
     private val polylineOptions = PolylineOptions()
-    var sharedViewModel: SharedViewModel? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding = FragmentNotificationsBinding.bind(view)
@@ -58,7 +58,6 @@ class NotificationsFragment : Fragment(R.layout.fragment_notifications) {
 
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as? SupportMapFragment
         mapFragment?.getMapAsync(callback)
-        sharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
         var i = 0
         if (binding != null) {
             with(binding) {
@@ -66,43 +65,55 @@ class NotificationsFragment : Fragment(R.layout.fragment_notifications) {
                     requireActivity().getSharedPreferences("state", Context.MODE_PRIVATE)
                 val state = shaPreferences.getString(MyLocationConstants.STATE, null)
                 if (state == MyLocationConstants.START || state == MyLocationConstants.PAUSE || state == MyLocationConstants.RESUME) {
-                    val listLating = MyDataBase.getInstance(requireContext()).locationDao()
-                        .getLocationData(
-                            MyDataBase.getInstance(requireContext()).movementDao()
-                                .getLastMovementDataId()
-                        )
-                    val list =
-                        listLating.map { LatLng(it.latitude.toDouble(), it.longitude.toDouble()) }
-                            .toList()
-                    polylineOptions.addAll(list)
-                        .color(Color.GREEN).width(15f)
-                }
-                sharedViewModel!!.getLocationLiveData().observe(viewLifecycleOwner) { location ->
-                    if (i == 0 && map != null && cameraPosition == null) {
-                        val sydney = LatLng(location.latitude, location.longitude)
-                        map?.addMarker(MarkerOptions().position(sydney).title("User"))
-                        map?.moveCamera(CameraUpdateFactory.newLatLng(sydney))
-                        i = 1
+                    try {
+                        val listLating = MyDataBase.getInstance(requireContext()).locationDao()
+                            .getLocationData(
+                                MyDataBase.getInstance(requireContext()).movementDao()
+                                    .getLastMovementDataId()
+                            )
+                        val list =
+                            listLating.map {
+                                LatLng(
+                                    it.latitude.toDouble(),
+                                    it.longitude.toDouble()
+                                )
+                            }
+                                .toList()
+                        polylineOptions.addAll(list)
+                            .color(Color.GREEN).width(15f)
+                    } catch (e: Exception) {
                     }
-                    polylineOptions.add(LatLng(location.latitude, location.longitude))
-                        .color(Color.GREEN).width(15f)
-                    map?.addPolyline(polylineOptions)
-                    this!!.latitude.text = location.latitude.toString()
-                    this.longitude.text = location.longitude.toString()
+
+                }
+                SharedData.locationLiveData.observe(viewLifecycleOwner) { location ->
+                    if (location == null) {
+                        this!!.latitude.text = "0"
+                        this.longitude.text = "0"
+                    } else {
+                        if (i == 0 && map != null && cameraPosition == null) {
+                            val sydney = LatLng(location.latitude, location.longitude)
+                            map?.addMarker(MarkerOptions().position(sydney).title("User"))
+                            map?.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+                            i = 1
+                        }
+                        polylineOptions.add(LatLng(location.latitude, location.longitude))
+                            .color(Color.GREEN).width(15f)
+                        map?.addPolyline(polylineOptions)
+                        this!!.latitude.text = location.latitude.toString()
+                        this.longitude.text = location.longitude.toString()
+                    }
                 }
 
-                sharedViewModel!!.getCurrentSpeedLiveData()
-                    .observe(viewLifecycleOwner) { Speed ->
-                        this!!.txtAverageSpeed.text =
-                            String.format(Locale.getDefault(), "%.1f", Speed)
-                    }
+                SharedData.currentSpeedLiveData.observe(viewLifecycleOwner) { Speed ->
+                    this!!.txtAverageSpeed.text =
+                        String.format(Locale.getDefault(), "%.1f", Speed)
+                }
             }
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        sharedViewModel = null
         binding = null
     }
 
